@@ -1,0 +1,838 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>คำนวณรายได้ KOL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ── Tokens ─────────────────────────────────────────────────────── */
+:root {
+  --teal:        #00C4B3;
+  --teal-dim:    #00A89A;
+  --teal-light:  #E0F7F5;
+  --blue:        #1F77DF;
+  --amber:       #F9A000;
+  --amber-light: #FFF4D6;
+
+  --bg:          #F0F7F7;
+  --surface:     #FFFFFF;
+  --surface-2:   #F7FBFB;
+  --border:      #D0E8E8;
+  --text:        #0D2424;
+  --text-2:      #3D6060;
+  --text-3:      #7A9E9E;
+
+  --up:          #16A34A;
+  --up-bg:       #F0FDF4;
+  --down:        #DC2626;
+  --down-bg:     #FEF2F2;
+  --keep:        #00C4B3;
+  --keep-bg:     #E0F7F5;
+
+  --radius:      12px;
+  --radius-sm:   8px;
+  --shadow:      0 2px 12px rgba(0,196,179,.10), 0 1px 3px rgba(0,0,0,.06);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:          #081818;
+    --surface:     #112020;
+    --surface-2:   #0D1C1C;
+    --border:      #1C3636;
+    --text:        #E4F5F5;
+    --text-2:      #7AABAB;
+    --text-3:      #3D6B6B;
+    --teal-light:  #0A2222;
+    --amber-light: #221800;
+    --up-bg:       #052A10;
+    --down-bg:     #2A0505;
+    --keep-bg:     #0A2222;
+    --shadow:      0 2px 16px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"] {
+  --bg:          #081818;
+  --surface:     #112020;
+  --surface-2:   #0D1C1C;
+  --border:      #1C3636;
+  --text:        #E4F5F5;
+  --text-2:      #7AABAB;
+  --text-3:      #3D6B6B;
+  --teal-light:  #0A2222;
+  --amber-light: #221800;
+  --up-bg:       #052A10;
+  --down-bg:     #2A0505;
+  --keep-bg:     #0A2222;
+  --shadow:      0 2px 16px rgba(0,0,0,.4);
+}
+
+/* ── Reset ───────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Prompt', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ── Header ──────────────────────────────────────────────────────── */
+.site-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 60px;
+}
+.logo-wrap svg { display: block; height: 26px; width: auto; }
+.header-sep { width: 1px; height: 24px; background: var(--border); flex-shrink: 0; }
+.header-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-2);
+  letter-spacing: .01em;
+  flex: 1;
+}
+.theme-btn {
+  width: 36px; height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface-2);
+  cursor: pointer;
+  font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color .15s;
+  flex-shrink: 0;
+}
+.theme-btn:hover { border-color: var(--teal); }
+.theme-btn:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+
+/* ── Main layout ─────────────────────────────────────────────────── */
+.layout {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+  display: grid;
+  gap: 20px;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 720px) {
+  .layout { grid-template-columns: 1fr 1fr; padding: 32px 24px 64px; gap: 24px; align-items: start; }
+}
+
+/* ── Panel ───────────────────────────────────────────────────────── */
+.panel { display: flex; flex-direction: column; gap: 16px; }
+
+.panel-heading {
+  display: flex; flex-direction: column; gap: 2px;
+  padding-bottom: 4px;
+}
+.panel-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--teal);
+}
+.panel-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.25;
+}
+
+/* ── Form card ───────────────────────────────────────────────────── */
+.form-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.form-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.score-chip {
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--teal-light);
+  color: var(--teal-dim);
+  padding: 1px 7px;
+  border-radius: 20px;
+}
+.rank-select {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 48px;
+  padding: 0 40px 0 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' viewBox='0 0 24 24'%3E%3Cpath stroke='%237A9E9E' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  transition: border-color .15s;
+}
+.rank-select:focus { outline: none; border-color: var(--teal); }
+
+.order-pair {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+}
+.order-sep { color: var(--text-3); font-weight: 500; font-size: 14px; text-align: center; }
+.input-wrap { position: relative; }
+.num-input {
+  width: 100%;
+  height: 48px;
+  padding: 0 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  transition: border-color .15s;
+  -moz-appearance: textfield;
+}
+.num-input::-webkit-outer-spin-button,
+.num-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+.num-input:focus { outline: none; border-color: var(--teal); }
+.num-input::placeholder { color: var(--text-3); font-weight: 400; }
+.input-unit {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-3);
+  pointer-events: none;
+}
+.single-input { position: relative; }
+.single-input .num-input { padding-right: 42px; }
+
+/* ── Posts bar ───────────────────────────────────────────────────── */
+.posts-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  overflow: hidden;
+  margin-top: 4px;
+}
+.posts-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--teal);
+  transition: width .3s ease;
+}
+
+/* ── Results panel ───────────────────────────────────────────────── */
+
+/* Score card */
+.score-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.score-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.score-total {
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  transition: color .2s;
+}
+.score-unit { font-size: 18px; font-weight: 400; color: var(--text-2); }
+.score-breakdown {
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.8;
+}
+
+/* Rank band */
+.rank-band {
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: background .25s, border-color .25s;
+  border: 1.5px solid transparent;
+}
+.rank-band.up   { background: var(--up-bg);   border-color: var(--up);   }
+.rank-band.keep { background: var(--keep-bg); border-color: var(--keep); }
+.rank-band.down { background: var(--down-bg); border-color: var(--down); }
+
+.rank-route {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.rank-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+}
+.rank-arrow { color: var(--text-3); font-size: 16px; }
+.rank-status-msg {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.rank-status-msg.up   { color: var(--up);   }
+.rank-status-msg.keep { color: var(--keep); }
+.rank-status-msg.down { color: var(--down); }
+.rank-posts-note {
+  font-size: 12px;
+  color: var(--text-2);
+  margin-top: 2px;
+}
+
+/* Payout card */
+.payout-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.payout-items {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.payout-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  padding: 5px 0;
+  font-size: 14px;
+  color: var(--text-2);
+  border-bottom: 1px dashed var(--border);
+}
+.payout-row:last-child { border-bottom: none; }
+.payout-row.highlight { color: var(--text); font-weight: 500; }
+.payout-row.bonus { color: var(--up); }
+.payout-row.guarantee { color: var(--blue); }
+.payout-row .amount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.payout-total-block {
+  background: var(--teal);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: background .2s;
+}
+.payout-total-block.no-income { background: var(--text-3); }
+.payout-total-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.75);
+}
+.payout-total-amount {
+  font-size: 44px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.02em;
+  transition: opacity .2s;
+}
+.payout-total-sub {
+  font-size: 12px;
+  color: rgba(255,255,255,.65);
+  margin-top: 4px;
+}
+
+/* Disclaimer */
+.disclaimer {
+  font-size: 12px;
+  color: var(--text-3);
+  line-height: 1.7;
+  padding: 0 4px;
+}
+
+/* ── Rank dot indicator (select) ─────────────────────────────────── */
+.rank-indicator {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+.rank-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+.rank-dot-circle {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ── Animation ───────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  .score-total { transition: color .2s; }
+  .payout-total-amount { transition: color .2s; }
+  .rank-band { transition: background .25s, border-color .25s; }
+}
+
+/* ── Scrollbar ───────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="site-header">
+  <div class="logo-wrap">
+    <svg width="187" height="58" viewBox="0 0 187 58" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="OOCA">
+      <path d="M25.2085 7.19507C11.2862 7.19507 0 18.403 0 32.2284C0 46.0546 11.2862 57.2625 25.2085 57.2625C39.1316 57.2625 50.4177 46.0546 50.4177 32.2284C50.4177 18.403 39.1316 7.19507 25.2085 7.19507ZM25.2085 43.1718C19.1231 43.1718 14.1884 38.2721 14.1884 32.2284C14.1884 26.1855 19.1223 21.2851 25.2085 21.2851C31.2947 21.2851 36.2286 26.1847 36.2286 32.2284C36.2286 38.2721 31.2947 43.1718 25.2085 43.1718Z" fill="#00C4B3"/>
+      <path d="M77.1422 7.19507C63.2199 7.19507 51.933 18.403 51.933 32.2284C51.933 46.0546 63.2199 57.2625 77.1422 57.2625C91.0653 57.2625 102.351 46.0546 102.351 32.2284C102.351 18.403 91.0653 7.19507 77.1422 7.19507ZM77.1422 43.1718C71.0561 43.1718 66.1229 38.2721 66.1229 32.2284C66.1229 26.1855 71.0561 21.2851 77.1422 21.2851C83.2284 21.2851 88.1616 26.1847 88.1616 32.2284C88.1623 38.2721 83.2284 43.1718 77.1422 43.1718Z" fill="#00C4B3"/>
+      <path d="M130.967 35.7397C130.228 35.8947 129.464 35.9774 128.68 35.9774C122.593 35.9774 117.659 31.0778 117.659 25.0341C117.659 18.9897 122.593 14.0908 128.68 14.0908C131.246 14.0908 133.606 14.9643 135.479 16.4266C138.108 12.4213 141.704 9.09945 145.936 6.78825C141.427 2.57951 135.357 0 128.68 0C114.757 0 103.47 11.2079 103.47 25.0341C103.47 38.8595 114.757 50.0675 128.68 50.0675C131.267 50.0675 133.763 49.6799 136.113 48.9614C133.382 45.1328 131.563 40.6207 130.967 35.7397Z" fill="#1F77DF"/>
+      <path d="M162 7C148.193 7 137 18.1917 137 31.997C137 45.8031 148.193 56.9948 162 56.9948C165.84 56.9948 169.478 56.1263 172.73 54.5783V57H172.928H175.592H187V31.997C187 18.1917 175.808 7 162 7ZM162 42.9245C155.964 42.9245 151.071 38.0319 151.071 31.997C151.071 25.9628 155.964 21.0696 162 21.0696C168.036 21.0696 172.928 25.9621 172.928 31.997C172.928 38.0319 168.036 42.9245 162 42.9245Z" fill="#00C4B3"/>
+    </svg>
+  </div>
+  <div class="header-sep"></div>
+  <div class="header-title">KOL Income Calculator</div>
+  <button class="theme-btn" id="themeBtn" aria-label="สลับธีม" title="สลับธีม">🌙</button>
+</header>
+
+<!-- Main -->
+<main>
+  <div class="layout">
+
+    <!-- Left: Inputs -->
+    <div class="panel">
+      <div class="panel-heading">
+        <div class="panel-eyebrow">รอบบิล 25 – 25</div>
+        <h1 class="panel-title">กรอกข้อมูลรอบนี้</h1>
+      </div>
+
+      <div class="form-card">
+        <!-- Rank -->
+        <div class="form-group">
+          <label class="form-label" for="currentRank">Rank ปัจจุบัน</label>
+          <select class="rank-select" id="currentRank">
+            <option value="Diamond">💎 Diamond</option>
+            <option value="Platinum">🔮 Platinum</option>
+            <option value="Gold">⭐ Gold</option>
+            <option value="Silver" selected>🥈 Silver</option>
+            <option value="Bronze">🥉 Bronze</option>
+          </select>
+        </div>
+
+        <div class="form-section-label">Order สำเร็จ (status = completed)</div>
+
+        <!-- Big orders -->
+        <div class="form-group">
+          <label class="form-label" for="bigCount">
+            ออเดอร์ ≥ 1,000฿
+            <span class="score-chip">+10 คะแนน/order</span>
+          </label>
+          <div class="order-pair">
+            <div class="input-wrap">
+              <input class="num-input" id="bigCount" type="number" min="0" value="0" placeholder="0">
+              <span class="input-unit">order</span>
+            </div>
+            <div class="order-sep">×</div>
+            <div class="input-wrap">
+              <input class="num-input" id="bigAvg" type="number" min="0" value="1500" placeholder="1500">
+              <span class="input-unit">฿/order</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Small orders -->
+        <div class="form-group">
+          <label class="form-label" for="smallCount">
+            ออเดอร์ &lt; 1,000฿
+            <span class="score-chip">+5 คะแนน/order</span>
+          </label>
+          <div class="order-pair">
+            <div class="input-wrap">
+              <input class="num-input" id="smallCount" type="number" min="0" value="0" placeholder="0">
+              <span class="input-unit">order</span>
+            </div>
+            <div class="order-sep">×</div>
+            <div class="input-wrap">
+              <input class="num-input" id="smallAvg" type="number" min="0" value="450" placeholder="450">
+              <span class="input-unit">฿/order</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section-label">ยอดวิวและโพส</div>
+
+        <!-- Views -->
+        <div class="form-group">
+          <label class="form-label" for="totalViews">
+            ยอดวิวรวมรอบบิล
+            <span class="score-chip">฿0.01/วิว</span>
+          </label>
+          <div class="single-input">
+            <input class="num-input" id="totalViews" type="number" min="0" value="0" placeholder="0">
+            <span class="input-unit">วิว</span>
+          </div>
+        </div>
+
+        <!-- Posts -->
+        <div class="form-group">
+          <label class="form-label" for="postsCount">
+            จำนวนโพสรอบบิลนี้
+            <span class="score-chip">ต้องการ ≥ 5</span>
+          </label>
+          <div class="single-input">
+            <input class="num-input" id="postsCount" type="number" min="0" value="0" placeholder="0">
+            <span class="input-unit">โพส</span>
+          </div>
+          <div class="posts-bar">
+            <div class="posts-bar-fill" id="postsBarFill" style="width:0%"></div>
+          </div>
+        </div>
+
+        <div class="form-section-label">กรอกโค้ด</div>
+
+        <!-- Empty codes -->
+        <div class="form-group">
+          <label class="form-label" for="emptyCodes">
+            กรอกโค้ดเฉยๆ ไม่ซื้อ
+            <span class="score-chip">+0.1 คะแนน/ครั้ง</span>
+          </label>
+          <div class="single-input">
+            <input class="num-input" id="emptyCodes" type="number" min="0" value="0" placeholder="0">
+            <span class="input-unit">ครั้ง</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Results -->
+    <div class="panel" id="resultsPanel">
+
+      <div class="panel-heading">
+        <div class="panel-eyebrow">ผลการคำนวณ</div>
+        <div class="panel-title">รายได้รอบนี้</div>
+      </div>
+
+      <!-- Score -->
+      <div class="score-card">
+        <div class="score-label">คะแนนสะสมรอบบิล</div>
+        <div class="score-total" id="scoreTotal">0 <span class="score-unit">คะแนน</span></div>
+        <div class="score-breakdown" id="scoreBreakdown">กรอกข้อมูลทางซ้ายเพื่อดูผล</div>
+      </div>
+
+      <!-- Rank band -->
+      <div class="rank-band keep" id="rankBand">
+        <div class="rank-route" id="rankRoute">
+          <div class="rank-pill" id="rankFrom" style="background:#64748B">🥈 Silver</div>
+          <span class="rank-arrow">→</span>
+          <div class="rank-pill" id="rankTo" style="background:#64748B">🥈 Silver</div>
+        </div>
+        <div class="rank-status-msg keep" id="rankMsg">รอข้อมูล...</div>
+        <div class="rank-posts-note" id="rankPostsNote"></div>
+      </div>
+
+      <!-- Payout -->
+      <div class="payout-card">
+        <div class="payout-items" id="payoutItems">
+          <!-- populated by JS -->
+        </div>
+        <div class="payout-total-block" id="payoutTotalBlock">
+          <div class="payout-total-label">รายได้ KOL รอบนี้</div>
+          <div class="payout-total-amount" id="payoutTotalAmount">฿0</div>
+          <div class="payout-total-sub" id="payoutTotalSub"></div>
+        </div>
+      </div>
+
+      <p class="disclaimer">
+        ค่าคอมจ่ายเฉพาะ order ที่ status = completed &nbsp;·&nbsp;
+        view pay คำนวณสิ้นรอบวันที่ 25 &nbsp;·&nbsp;
+        ค่าตัวเลขอาจปัดเศษ
+      </p>
+    </div>
+
+  </div>
+</main>
+
+<script>
+/* ── Config ─────────────────────────────────────────────────────── */
+const RANKS = [
+  { name:'Diamond',  emoji:'💎', scoreUp:400, scoreKeep:300, guarantee:7500,  bonus:5500,  color:'#1F77DF' },
+  { name:'Platinum', emoji:'🔮', scoreUp:150, scoreKeep:120, guarantee:3500,  bonus:2250,  color:'#7C3AED' },
+  { name:'Gold',     emoji:'⭐', scoreUp:80,  scoreKeep:65,  guarantee:1000,  bonus:750,   color:'#F9A000' },
+  { name:'Silver',   emoji:'🥈', scoreUp:35,  scoreKeep:30,  guarantee:500,   bonus:375,   color:'#607D8B' },
+  { name:'Bronze',   emoji:'🥉', scoreUp:0,   scoreKeep:0,   guarantee:250,   bonus:0,     color:'#E8602C' },
+];
+const COMM_RATE  = 0.05;
+const VIEW_RATE  = 0.01;
+const MIN_POSTS  = 5;
+
+/* ── DOM refs ────────────────────────────────────────────────────── */
+const $ = id => document.getElementById(id);
+const el = {
+  rank:       $('currentRank'),
+  bigCount:   $('bigCount'),
+  bigAvg:     $('bigAvg'),
+  smallCount: $('smallCount'),
+  smallAvg:   $('smallAvg'),
+  views:      $('totalViews'),
+  posts:      $('postsCount'),
+  empty:      $('emptyCodes'),
+  postsBar:   $('postsBarFill'),
+
+  scoreTotal: $('scoreTotal'),
+  scoreBreak: $('scoreBreakdown'),
+  rankBand:   $('rankBand'),
+  rankRoute:  $('rankRoute'),
+  rankFrom:   $('rankFrom'),
+  rankTo:     $('rankTo'),
+  rankMsg:    $('rankMsg'),
+  rankNote:   $('rankPostsNote'),
+  payItems:   $('payoutItems'),
+  payBlock:   $('payoutTotalBlock'),
+  payAmount:  $('payoutTotalAmount'),
+  paySub:     $('payoutTotalSub'),
+};
+
+/* ── Helpers ─────────────────────────────────────────────────────── */
+const num = id => Math.max(0, parseFloat($(id).value) || 0);
+const thb = n  => '฿' + n.toLocaleString('th-TH', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 });
+const thbI = n => '฿' + Math.round(n).toLocaleString('th-TH');
+const rankByName = name => RANKS.find(r => r.name === name) || RANKS[4];
+
+function highestAchievable(score) {
+  for (const r of RANKS) {
+    if (score >= r.scoreUp) return r;
+  }
+  return RANKS[4];
+}
+
+/* ── Core calc ───────────────────────────────────────────────────── */
+function calc() {
+  const bigCount   = num('bigCount');
+  const bigAvg     = num('bigAvg');
+  const smallCount = num('smallCount');
+  const smallAvg   = num('smallAvg');
+  const views      = num('totalViews');
+  const posts      = num('postsCount');
+  const empty      = num('emptyCodes');
+  const currentRank = rankByName(el.rank.value);
+
+  /* Score */
+  const scoreBig   = bigCount   * 10;
+  const scoreSmall = smallCount * 5;
+  const scoreEmpty = empty      * 0.1;
+  const totalScore = scoreBig + scoreSmall + scoreEmpty;
+
+  /* Rank logic */
+  const achievable    = highestAchievable(totalScore);
+  const currentIdx    = RANKS.indexOf(currentRank);
+  const achievableIdx = RANKS.indexOf(achievable);
+  const canRankUp     = achievableIdx < currentIdx;
+  const canKeep       = totalScore >= currentRank.scoreKeep;
+  const postsOk       = posts >= MIN_POSTS;
+
+  let rankEnd, status, earnedGuarantee, earnedBonus;
+
+  if (canRankUp) {
+    rankEnd          = achievable;
+    earnedBonus      = postsOk ? achievable.bonus : 0;
+    earnedGuarantee  = 0;
+    status           = postsOk ? 'up_bonus' : 'up_nobonus';
+  } else if (canKeep && postsOk) {
+    rankEnd          = currentRank;
+    earnedGuarantee  = currentRank.guarantee;
+    earnedBonus      = 0;
+    status           = 'keep';
+  } else {
+    const downIdx    = Math.min(currentIdx + 1, RANKS.length - 1);
+    rankEnd          = RANKS[downIdx];
+    earnedGuarantee  = 0;
+    earnedBonus      = 0;
+    status           = !canKeep ? 'down_score' : 'down_posts';
+  }
+
+  /* Payout */
+  const revenue    = bigCount * bigAvg + smallCount * smallAvg;
+  const commission = revenue * COMM_RATE;
+  const viewPay    = views   * VIEW_RATE;
+  const sumValue   = commission + viewPay;
+  const topUp      = Math.max(0, earnedGuarantee - sumValue);
+  const totalPay   = Math.max(sumValue, earnedGuarantee) + earnedBonus;
+
+  return {
+    totalScore, scoreBig, scoreSmall, scoreEmpty,
+    currentRank, rankEnd, status, canRankUp, canKeep, postsOk,
+    revenue, commission, viewPay, sumValue,
+    earnedGuarantee, earnedBonus, topUp, totalPay,
+    posts,
+  };
+}
+
+/* ── Render ──────────────────────────────────────────────────────── */
+function render() {
+  const d = calc();
+
+  /* Posts bar */
+  const pct = Math.min(100, (d.posts / MIN_POSTS) * 100);
+  el.postsBar.style.width = pct + '%';
+  el.postsBar.style.background = d.postsOk ? '#16A34A' : '#00C4B3';
+
+  /* Score */
+  el.scoreTotal.innerHTML = d.totalScore.toLocaleString('th-TH', {maximumFractionDigits:1})
+    + ' <span class="score-unit">คะแนน</span>';
+
+  const parts = [];
+  if (d.scoreBig)   parts.push(`Order ≥1,000฿ × ${num('bigCount').toLocaleString('th-TH')} = ${d.scoreBig.toLocaleString()} pt`);
+  if (d.scoreSmall) parts.push(`Order <1,000฿ × ${num('smallCount').toLocaleString('th-TH')} = ${d.scoreSmall.toLocaleString()} pt`);
+  if (d.scoreEmpty) parts.push(`กรอกโค้ด × ${num('emptyCodes').toLocaleString('th-TH')} = ${d.scoreEmpty.toFixed(1)} pt`);
+  el.scoreBreak.textContent = parts.length ? parts.join('\n') : 'ยังไม่มีคะแนน — กรอกข้อมูลด้านซ้าย';
+
+  /* Rank band */
+  const from = d.currentRank;
+  const to   = d.rankEnd;
+  el.rankFrom.textContent = from.emoji + ' ' + from.name;
+  el.rankFrom.style.background = from.color;
+  el.rankTo.textContent   = to.emoji + ' ' + to.name;
+  el.rankTo.style.background   = to.color;
+
+  const bandClass = {
+    up_bonus:'up', up_nobonus:'up', keep:'keep', down_score:'down', down_posts:'down'
+  }[d.status];
+  el.rankBand.className = 'rank-band ' + bandClass;
+
+  const msgs = {
+    up_bonus:   '⬆️ ขึ้นแรงก์ + ได้โบนัส',
+    up_nobonus: '⬆️ ขึ้นแรงก์ (ไม่ได้โบนัส — โพสไม่ครบ 5)',
+    keep:       '✅ คงแรงก์ + ได้ประกันรายได้',
+    down_score: '⬇️ ลดแรงก์ — คะแนนไม่ถึงเกณฑ์รักษา',
+    down_posts: '⬇️ ลดแรงก์ — โพสไม่ครบ 5 (แม้คะแนนถึง)',
+  };
+  el.rankMsg.textContent  = msgs[d.status];
+  el.rankMsg.className    = 'rank-status-msg ' + bandClass;
+
+  const keepScore = d.currentRank.scoreKeep;
+  el.rankNote.textContent = keepScore > 0
+    ? `คะแนนรักษา ${d.currentRank.name}: ${keepScore} pt  ·  คะแนนขึ้น ${to.name}: ${to.scoreUp} pt`
+    : '';
+
+  /* Payout rows */
+  const rows = [];
+  if (d.revenue > 0)    rows.push({ label:'รายรับจากออเดอร์',  val: thbI(d.revenue),     cls:'' });
+  rows.push({ label:'ค่าคอม KOL 5%',     val: thbI(d.commission), cls:'' });
+  rows.push({ label:'View Pay',           val: thbI(d.viewPay),    cls:'' });
+  rows.push({ label:'Sum Value',          val: thbI(d.sumValue),   cls:'highlight' });
+  if (d.earnedGuarantee > 0) {
+    if (d.topUp > 0)
+      rows.push({ label:`ประกัน top-up (${d.currentRank.name})`, val: '+' + thbI(d.topUp), cls:'guarantee' });
+    else
+      rows.push({ label:`ประกัน (${d.currentRank.name}) — Sum Value เกินแล้ว`, val: '–', cls:'guarantee' });
+  }
+  if (d.earnedBonus > 0)
+    rows.push({ label:`โบนัสขึ้นแรงก์ → ${d.rankEnd.name}`, val: '+' + thbI(d.earnedBonus), cls:'bonus' });
+
+  el.payItems.innerHTML = rows.map(r =>
+    `<div class="payout-row ${r.cls}"><span>${r.label}</span><span class="amount">${r.val}</span></div>`
+  ).join('');
+
+  el.payAmount.textContent = thbI(d.totalPay);
+  el.payBlock.className = 'payout-total-block' + (d.totalPay === 0 ? ' no-income' : '');
+
+  const subParts = [];
+  if (d.earnedGuarantee > 0 && d.topUp > 0) subParts.push(`ประกัน ${thbI(d.earnedGuarantee)}`);
+  if (d.earnedBonus > 0)                     subParts.push(`โบนัส ${thbI(d.earnedBonus)}`);
+  el.paySub.textContent = subParts.length ? 'รวม: ' + subParts.join(' + ') : '';
+}
+
+/* ── Theme toggle ────────────────────────────────────────────────── */
+const themeBtn = $('themeBtn');
+let dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+function applyTheme() {
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  themeBtn.textContent = dark ? '☀️' : '🌙';
+}
+themeBtn.addEventListener('click', () => { dark = !dark; applyTheme(); });
+applyTheme();
+
+/* ── Wire inputs ─────────────────────────────────────────────────── */
+document.querySelectorAll('input, select').forEach(el => {
+  el.addEventListener('input', render);
+  el.addEventListener('change', render);
+});
+
+render();
+</script>
+</body>
+</html>
