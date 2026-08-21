@@ -629,11 +629,11 @@ body {
 <script>
 /* ── Config ─────────────────────────────────────────────────────── */
 const RANKS = [
-  { name:'Diamond',  emoji:'💎', scoreUp:400, scoreKeep:300, guarantee:7500,  bonus:5500,  color:'#1F77DF' },
-  { name:'Platinum', emoji:'🔮', scoreUp:150, scoreKeep:120, guarantee:3500,  bonus:2250,  color:'#7C3AED' },
-  { name:'Gold',     emoji:'⭐', scoreUp:80,  scoreKeep:65,  guarantee:1000,  bonus:750,   color:'#F9A000' },
-  { name:'Silver',   emoji:'🥈', scoreUp:35,  scoreKeep:30,  guarantee:500,   bonus:375,   color:'#607D8B' },
-  { name:'Bronze',   emoji:'🥉', scoreUp:0,   scoreKeep:0,   guarantee:250,   bonus:0,     color:'#E8602C' },
+  { name:'Diamond',  emoji:'💎', scoreUp:180, scoreKeep:140, guarantee:7500,  bonus:8750,  color:'#1F77DF' },
+  { name:'Platinum', emoji:'🔮', scoreUp:90,  scoreKeep:70,  guarantee:4000,  bonus:5000,  color:'#7C3AED' },
+  { name:'Gold',     emoji:'⭐', scoreUp:45,  scoreKeep:35,  guarantee:3000,  bonus:3000,  color:'#F9A000' },
+  { name:'Silver',   emoji:'🥈', scoreUp:15,  scoreKeep:10,  guarantee:2000,  bonus:1500,  color:'#607D8B' },
+  { name:'Bronze',   emoji:'🥉', scoreUp:0,   scoreKeep:0,   guarantee:1000,  bonus:0,     color:'#E8602C' },
 ];
 const COMM_RATE  = 0.05;
 const VIEW_RATE  = 0.01;
@@ -708,7 +708,9 @@ function calc() {
 
   if (canRankUp) {
     rankEnd          = achievable;
-    earnedBonus      = postsOk ? achievable.bonus : 0;
+    // Incremental bonus: จ่ายเฉพาะส่วนที่ปีนขึ้นจริง (แต้มสะสมปลายทาง − แต้มสะสมต้นทาง)
+    // เช่น Platinum→Diamond = 8,750 − 5,000 = 3,750 · Bronze→Diamond = 8,750 − 0 = 8,750
+    earnedBonus      = postsOk ? (achievable.bonus - currentRank.bonus) : 0;
     earnedGuarantee  = 0;
     status           = postsOk ? 'up_bonus' : 'up_nobonus';
   } else if (canKeep && postsOk) {
